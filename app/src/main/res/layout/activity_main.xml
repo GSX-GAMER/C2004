@@ -1,11 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:padding="8dp" android:background="#101010">
     <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="C2004 Music" android:textColor="#ffffff" android:textSize="22sp" android:textStyle="bold" android:padding="4dp"/>
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
-        <EditText android:id="@+id/search_box" android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1" android:hint="Search local music" android:textColor="#ffffff" android:textColorHint="#888888" android:singleLine="true" android:padding="8dp"/>
-        <Button android:id="@+id/search_button" android:layout_width="80dp" android:layout_height="44dp" android:text="Search"/>
-    </LinearLayout>
-    <Button android:id="@+id/scan_button" android:layout_width="match_parent" android:layout_height="44dp" android:text="Scan Music Library"/>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal"><EditText android:id="@+id/search_box" android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1" android:hint="Search local music" android:textColor="#ffffff" android:textColorHint="#888888" android:singleLine="true" android:padding="8dp"/><Button android:id="@+id/search_button" android:layout_width="80dp" android:layout_height="44dp" android:text="Search"/></LinearLayout>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="44dp" android:orientation="horizontal"><Button android:id="@+id/scan_button" android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1" android:text="Scan Local"/><Button android:id="@+id/remote_button" android:layout_width="110dp" android:layout_height="44dp" android:text="Remote"/></LinearLayout>
     <TextView android:id="@+id/status_text" android:layout_width="match_parent" android:layout_height="32dp" android:text="Ready" android:textColor="#aaaaaa" android:gravity="center_vertical" android:paddingLeft="4dp"/>
     <android.support.v7.widget.RecyclerView android:id="@+id/track_list" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:clipToPadding="false"/>
 </LinearLayout>

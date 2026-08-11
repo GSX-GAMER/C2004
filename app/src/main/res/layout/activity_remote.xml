@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:background="#101010" android:padding="8dp">
+<LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+<TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Remote Library" android:textColor="#ffffff" android:textSize="20sp" android:textStyle="bold"/>
+<EditText android:id="@+id/server_url" android:layout_width="match_parent" android:layout_height="44dp" android:hint="https://server.example.com" android:textColor="#ffffff" android:textColorHint="#888888"/>
+<EditText android:id="@+id/server_user" android:layout_width="match_parent" android:layout_height="44dp" android:hint="Username" android:textColor="#ffffff" android:textColorHint="#888888"/>
+<EditText android:id="@+id/server_password" android:layout_width="match_parent" android:layout_height="44dp" android:hint="Password" android:inputType="textPassword" android:textColor="#ffffff" android:textColorHint="#888888"/>
+<LinearLayout android:layout_width="match_parent" android:layout_height="44dp" android:orientation="horizontal"><EditText android:id="@+id/remote_query" android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1" android:hint="Search" android:textColor="#ffffff" android:textColorHint="#888888"/><Button android:id="@+id/remote_search" android:layout_width="80dp" android:layout_height="44dp" android:text="Search"/></LinearLayout>
+<TextView android:id="@+id/remote_status" android:layout_width="match_parent" android:layout_height="32dp" android:textColor="#aaaaaa"/>
+<LinearLayout android:id="@+id/remote_results" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"/>
+</LinearLayout></ScrollView>
