@@ -12,15 +12,13 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.IBinder;
 import android.support.v4.app.NotificationCompat;
-import android.support.v4.media.MediaBrowserCompat;
-import android.support.v4.media.MediaDescriptionCompat;
-import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import java.io.IOException;
 
 public class PlaybackService extends Service implements AudioManager.OnAudioFocusChangeListener {
     public static final String ACTION_PLAY = "com.gsxgamer.c2004.action.PLAY";
+    public static final String ACTION_TOGGLE = "com.gsxgamer.c2004.action.TOGGLE";
     private static final String CHANNEL_ID = "playback";
     private static final int NOTIFICATION_ID = 2004;
 
@@ -33,8 +31,7 @@ public class PlaybackService extends Service implements AudioManager.OnAudioFocu
         super.onCreate();
         audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
         mediaSession = new MediaSessionCompat(this, "C2004Playback");
-        mediaSession.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS |
-                MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
+        mediaSession.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS | MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
         mediaSession.setCallback(new MediaSessionCompat.Callback() {
             @Override public void onPlay() { if (player != null) player.start(); updateState(); }
             @Override public void onPause() { if (player != null && player.isPlaying()) player.pause(); updateState(); }
@@ -45,9 +42,9 @@ public class PlaybackService extends Service implements AudioManager.OnAudioFocu
     }
 
     @Override public int onStartCommand(Intent intent, int flags, int startId) {
-        if (intent != null && ACTION_PLAY.equals(intent.getAction()) && intent.getData() != null) {
-            play(intent.getData());
-        }
+        if (intent == null) return START_STICKY;
+        if (ACTION_PLAY.equals(intent.getAction()) && intent.getData() != null) play(intent.getData());
+        else if (ACTION_TOGGLE.equals(intent.getAction())) togglePlayback();
         return START_STICKY;
     }
 
@@ -59,31 +56,31 @@ public class PlaybackService extends Service implements AudioManager.OnAudioFocu
         try {
             player.setDataSource(this, uri);
             player.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-                @Override public void onPrepared(MediaPlayer mp) {
-                    mp.start();
-                    updateState();
-                    startForeground(NOTIFICATION_ID, buildNotification());
-                }
+                @Override public void onPrepared(MediaPlayer mp) { mp.start(); updateState(); }
             });
             player.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
                 @Override public void onCompletion(MediaPlayer mp) { updateState(); }
             });
             player.setOnErrorListener(new MediaPlayer.OnErrorListener() {
-                @Override public boolean onError(MediaPlayer mp, int what, int extra) {
-                    stopPlayerOnly(); updateState(); return true;
-                }
+                @Override public boolean onError(MediaPlayer mp, int what, int extra) { stopPlayerOnly(); updateState(); return true; }
             });
             currentPath = uri.toString();
             player.prepareAsync();
+            startForeground(NOTIFICATION_ID, buildNotification());
         } catch (IOException e) {
             stopPlayerOnly();
             stopSelf();
         }
     }
 
+    private void togglePlayback() {
+        if (player == null) return;
+        if (player.isPlaying()) player.pause(); else player.start();
+        updateState();
+    }
+
     private boolean requestAudioFocus() {
-        return audioManager.requestAudioFocus(this, AudioManager.STREAM_MUSIC,
-                AudioManager.AUDIOFOCUS_GAIN) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED;
+        return audioManager.requestAudioFocus(this, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED;
     }
 
     @Override public void onAudioFocusChange(int focusChange) {
@@ -101,30 +98,34 @@ public class PlaybackService extends Service implements AudioManager.OnAudioFocu
     private Notification buildNotification() {
         Intent launch = new Intent(this, com.gsxgamer.c2004.MainActivity.class);
         PendingIntent content = PendingIntent.getActivity(this, 0, launch, PendingIntent.FLAG_UPDATE_CURRENT);
-        PendingIntent playPause = PendingIntent.getService(this, 1,
-                new Intent(this, PlaybackService.class).setAction(ACTION_PLAY).setData(Uri.parse(currentPath)),
-                PendingIntent.FLAG_UPDATE_CURRENT);
+        Intent toggle = new Intent(this, PlaybackService.class).setAction(ACTION_TOGGLE);
+        PendingIntent playPause = PendingIntent.getService(this, 1, toggle, PendingIntent.FLAG_UPDATE_CURRENT);
+        boolean playing = player != null && player.isPlaying();
         NotificationCompat.Builder b = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(com.gsxgamer.c2004.R.drawable.ic_launcher)
                 .setContentTitle("C2004")
-                .setContentText("Playing local audio")
+                .setContentText(playing ? "Playing local audio" : "Playback paused")
                 .setContentIntent(content)
-                .setOngoing(player != null && player.isPlaying())
+                .setOngoing(playing)
                 .setOnlyAlertOnce(true)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .addAction(new NotificationCompat.Action(
-                        player != null && player.isPlaying() ? android.R.drawable.ic_media_pause : android.R.drawable.ic_media_play,
-                        player != null && player.isPlaying() ? "Pause" : "Play", playPause));
-        b.setStyle(new android.support.v4.media.app.NotificationCompat.MediaStyle().setMediaSession(mediaSession.getSessionToken()).setShowActionsInCompactView(0));
+                        playing ? android.R.drawable.ic_media_pause : android.R.drawable.ic_media_play,
+                        playing ? "Pause" : "Play", playPause));
+        b.setStyle(new android.support.v4.media.app.NotificationCompat.MediaStyle()
+                .setMediaSession(mediaSession.getSessionToken()).setShowActionsInCompactView(0));
         return b.build();
     }
 
     private void updateState() {
-        long position = player == null ? 0 : player.getCurrentPosition();
-        long duration = player == null ? 0 : player.getDuration();
+        long position = 0;
+        long duration = 0;
+        if (player != null) {
+            try { position = player.getCurrentPosition(); duration = player.getDuration(); } catch (IllegalStateException ignored) {}
+        }
         int state = player != null && player.isPlaying() ? PlaybackStateCompat.STATE_PLAYING : PlaybackStateCompat.STATE_PAUSED;
-        mediaSession.setPlaybackState(new PlaybackStateCompat.Builder().setActions(
-                PlaybackStateCompat.ACTION_PLAY | PlaybackStateCompat.ACTION_PAUSE | PlaybackStateCompat.ACTION_STOP)
+        mediaSession.setPlaybackState(new PlaybackStateCompat.Builder()
+                .setActions(PlaybackStateCompat.ACTION_PLAY | PlaybackStateCompat.ACTION_PAUSE | PlaybackStateCompat.ACTION_STOP)
                 .setState(state, position, 1f).setBufferedPosition(duration).build());
         if (player != null) startForeground(NOTIFICATION_ID, buildNotification());
     }
@@ -132,7 +133,7 @@ public class PlaybackService extends Service implements AudioManager.OnAudioFocu
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= 26) {
             NotificationChannel channel = new NotificationChannel(CHANNEL_ID, "Playback", NotificationManager.IMPORTANCE_LOW);
-            ((NotificationManager)getSystemService(NOTIFICATION_SERVICE)).createNotificationChannel(channel);
+            ((NotificationManager) getSystemService(NOTIFICATION_SERVICE)).createNotificationChannel(channel);
         }
     }
 
